@@ -1,0 +1,60 @@
+<html>
+<head>
+    <title>Test socket.io</title>
+    <script src="socket.io.js"></script>
+</head>
+<body>
+<div class="container center">
+    <canvas id="canvas-video" width="640" height="480"></canvas>
+</div>
+</body>
+<script>
+    var connect_error_count = 0;
+
+
+    var socket = io.connect('http://localhost:3000/',
+        {
+            'reconnectionDelay': 10 // defaults to 500
+        }
+    );
+
+
+    socket.on('connect_error', function () {
+        console.log('Connection Failed');
+        connect_error_count++;
+        if (connect_error_count >= 5) {
+            socket.disconnect();
+            console.log("stop reconection");
+        }
+    });
+
+
+    socket.on('reconnect', function () {
+        console.log('reconnect');
+        connect_error_count = 0;
+    });
+
+
+    var canvas = document.getElementById('canvas-video');
+    var context = canvas.getContext('2d');
+    var img = new Image();
+
+    // show loading notice
+    context.fillStyle = '#333';
+    context.fillText('Loading...', canvas.width/2-30, canvas.height/3);
+
+    socket.on('frame', function (data) {
+        var uint8Arr = new Uint8Array(data);
+        var str = String.fromCharCode.apply(null, uint8Arr);
+        var base64String = btoa(str);
+        console.log(base64String);
+
+        img.onload = function () {
+            context.drawImage(this, 0, 0, canvas.width, canvas.height);
+        };
+        img.src = 'data:image/png;base64,' + base64String;
+    });
+
+
+</script>
+</html>
